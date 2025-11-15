@@ -1,75 +1,187 @@
-# 🔐 LoginSystemDesktop
+# VaultScribe Desktop (LoginSystemDesktop)
 
-**LoginSystemDesktop** is a secure desktop authentication system built in **Python (Kivy/KivyMD)**.  
-It’s designed as a **foundational security module** for my larger project, **VaultScribe**, an upcoming **AI-powered meeting summarizer** that operates *entirely locally* — ensuring **data privacy, encryption, and zero network exposure**.
+VaultScribe Desktop is a **secure, local-first meeting assistant**.  
+It lets you:
 
----
+- Sign in with a locally stored account (no cloud auth)
+- Transcribe meeting audio **fully offline** using a local Whisper model
+- Summarize transcripts via an **external LLM API** (OpenRouter)
+- Securely view and copy stored transcripts and summaries
 
-## 🧠 Project Overview
-
-This application serves as a **local login and identity management interface** with a focus on **real-world cybersecurity best practices**.
-
-- Implements **Argon2id hashing** for password storage — a modern, memory-hard algorithm resistant to brute-force and GPU attacks.
-- Integrates **TOTP (Time-Based One-Time Password)** using **Google/Microsoft Authenticator** for **two-factor authentication (2FA)**.
-- Uses **SQLite** for secure local credential storage — never transmitting data across networks.
-- Supports **session management and expiry**, ensuring user tokens are both random and time-limited.
-- Includes **modular UI design** for scalability into future local applications.
+> ⚠️ **Important:** This project is a prototype for a class / portfolio, **not** production-ready security software.
 
 ---
 
-## 🛡️ Security Features
+## Features
 
-| Feature | Description |
-|----------|-------------|
-| **Argon2id Password Hashing** | Uses industry-standard Argon2id for secure password hashing and optional legacy migration for older bcrypt/plaintext entries. |
-| **Two-Factor Authentication (2FA)** | Enforces TOTP 6-digit verification codes synced with authenticator apps. |
-| **Local Database Encryption Surface** | Operates on a local `SQLite` file — ensuring no credentials or session data are sent over the internet. |
-| **Session Tokens** | Securely generated with Python’s `secrets` library; automatically expired after 30 days. |
-| **Password Strength Enforcement** | Requires ≥8 characters, one uppercase letter, one number, and one special character. |
-| **Secure UI Isolation** | All credential handling occurs through local Kivy/KivyMD UI components — no browser-based attack surface. |
+- 🧑‍💻 **Local-first login**
+  - User accounts stored locally  
+  - Passwords hashed with **Argon2id**  
+  - Time-limited auth tokens  
 
----
+- 🔐 **Security-focused design**
+  - No passwords or audio ever leave the machine  
+  - Only **text transcripts** are sent to the summarization API  
+  - Designed to run on a single trusted local device  
 
-## 🧩 Tech Stack
+- 🎙 **Offline transcription**
+  - Powered by a local **Whisper Tiny** model  
+  - No cloud calls  
+  - Requires `ffmpeg`  
 
-- **Language:** Python 3.x  
-- **UI Framework:** Kivy / KivyMD  
-- **Database:** SQLite  
-- **Security Libraries:**  
-  - `argon2-cffi` (Argon2id hashing)  
-  - `pyotp` (TOTP 2FA)  
-  - `qrcode` (QR code generation)  
-  - `secrets` (session tokens)  
+- 🧾 AI summaries of meetings
+  - Summaries generated using an LLM via **OpenRouter**  
+  - You manually supply an API key inside `Ai_API.py`:
+    ```
+    OPENROUTER_API_KEY = "API KEY GOES HERE"
+    ```
 
----
-
-## 🧱 Future Integration — VaultScribe
-
-This project is the **login and security front-end** for **VaultScribe**, an AI-powered local application designed for **lawyers, doctors, and professionals** who handle sensitive information.
-
-**VaultScribe** will:
-- Summarize meetings and transcriptions using **on-device AI**.
-- Store and encrypt data locally.
-- Never send or expose files to external servers or APIs.
-- Provide **enterprise-level security** for small and medium businesses.
-
-> ⚙️ LoginSystemDesktop ensures that when VaultScribe launches, it inherits an already secure and privacy-focused authentication base.
+- 🗄 **Storage & retrieval**
+  - View all saved meetings  
+  - Inspect transcript + summary  
+  - Text is fully copyable for documentation or support tickets  
 
 ---
 
-## 🖥️ How It Works
+## Tech Stack
 
-1. **Sign Up**  
-   - User creates an account with a strong password.  
-   - App generates a TOTP secret and shows a QR code to link to an authenticator app.
-
-2. **Login**  
-   - User enters credentials.  
-   - App verifies Argon2id hash and prompts for 2FA code.  
-   - On success, a session token is generated and saved securely.
-
-3. **Password Reset**  
-   - Requires valid 2FA verification.  
-   - Enforces same password-strength rules before updating Argon2id hash.
+- Python 3.10+
+- Kivy + KivyMD (desktop UI)
+- Argon2id hashing
+- Whisper / faster_whisper
+- OpenRouter API for summarization
+- SQLite local database
 
 ---
+
+## Getting Started
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/<your-username>/<your-repo-name>.git
+cd <your-repo-name>
+```
+
+### 2. Create and activate a venv
+
+```bash
+python -m venv .venv
+```
+
+**Windows:**
+```bash
+.venv\Scripts\activate
+```
+
+**macOS/Linux:**
+```bash
+source .venv/bin/activate
+```
+
+### 3. Install dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### 4. Install FFmpeg
+
+**Windows:**
+```bash
+choco install ffmpeg
+```
+
+**macOS:**
+```bash
+brew install ffmpeg
+```
+
+**Linux:**
+```bash
+sudo apt install ffmpeg
+```
+
+### 5. Add a Whisper model
+
+Create:
+
+```
+./whisper/
+```
+
+Download a Whisper Tiny model (from HuggingFace etc.) and place the `.pt` or `.bin` file into that folder.
+
+### 6. Add your OpenRouter API key
+
+Inside `Ai_API.py`:
+
+```
+OPENROUTER_API_KEY = "API KEY GOES HERE"
+```
+
+Replace with your key (but **do not commit it**).
+
+---
+
+## Running the App
+
+```bash
+python services/Main.py
+```
+
+---
+
+## Usage Overview
+
+### 🔐 Create an account
+- Enter email and password  
+- Password stored as Argon2id hash  
+
+### 🔑 Sign in
+- Validates credentials  
+- Generates local session token  
+
+### 🎙 Transcribe audio
+- Pick a file  
+- Whisper transcribes offline  
+- Transcript sent to OpenRouter for summary  
+- Summary displayed in a copyable text field  
+
+### 🗄 View saved meetings
+- Shows all stored sessions  
+- Click any item for transcript + summary  
+
+---
+
+## Security Notes
+
+- Argon2id password hashing  
+- Offline transcription  
+- Only text transcript goes to API  
+- Local storage with SQLite  
+- Not production-hardened  
+
+---
+
+## Future Improvements
+
+- ENV-based secret management  
+- Local summarization model  
+- Export meeting files  
+- Advanced search  
+
+---
+
+## License
+
+MIT License
+
+---
+
+## Credits
+
+- Kivy / KivyMD  
+- Whisper  
+- OpenRouter  
+- Argon2id hashing  
