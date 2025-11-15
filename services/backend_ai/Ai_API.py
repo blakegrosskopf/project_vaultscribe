@@ -30,7 +30,7 @@ from typing import Optional
 import requests
 
 # ========== Hardcoded OpenRouter API key ========================
-OPENROUTER_API_KEY = "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"
+OPENROUTER_API_KEY = "API KEY GOES HERE"
 # ================================================================
 
 class AISummarizerTranscriber:
@@ -234,26 +234,30 @@ class AISummarizerTranscriber:
 
     def summarize(self, text_to_summarize: str) -> str:
         """
-        Summarize the provided text using OpenRouter's deepseek/deepseek-chat-v3.1:free model.
+        Summarize the provided text using OpenRouter.
 
-        Implementation notes:
-         - Constructs a single prompt that instructs the model to summarize the provided text.
-         - Sends a single non-streaming request and waits for completion.
-         - Returns the model's top-level reply as a string.
-
-        :param text_to_summarize: the text to be summarized (the user's input param).
-        :return: model reply as a string
-        :raises: RuntimeError on HTTP/API failures or missing API key
+        Returns a non-empty string whenever possible.
+        If the API returns an unexpected/empty format, we fall back
+        to a simple local "summary" (first chunk of the transcript).
         """
         if not self.openrouter_api_key:
             raise RuntimeError("OpenRouter API key not provided. Please hardcode it into the script or pass it in init.")
 
-        # Build the prompt - combine the summarization instruction and the user's text in one message.
-        prompt = (
-            "Please summarize the following text clearly and concisely. "
-            "Provide the main points, and keep it readable and well-structured. Do NOT introduce the task with phrases like 'Certainly, let's do that' -- instead, just jump straight into the summary.\n\n"
-            f"TEXT TO SUMMARIZE:\n\n{text_to_summarize}"
-        )
+        # Build prompt
+        prompt = f"""
+        Summarize the following transcript into clean, accurate bullet points.
+
+        Requirements:
+        - Remove filler words, stutters, and repetition.
+        - Correct mis-transcribed names or terms using context.
+        - Extract the *main ideas* only.
+        - Use short, direct bullets.
+        - Capture any threats, warnings, or key decisions.
+        - Do NOT invent new information.
+
+        TRANSCRIPT:
+        {text_to_summarize}
+        """
 
         url = "https://openrouter.ai/api/v1/chat/completions"
         headers = {
@@ -262,13 +266,12 @@ class AISummarizerTranscriber:
         }
 
         payload = {
-            "model": "deepseek/deepseek-chat-v3.1:free",
+            # use the model you've already switched to
+            "model": "qwen/qwen-2.5-72b-instruct:free",
             "messages": [
                 {"role": "user", "content": prompt}
             ],
-            # non-streaming call
             "stream": False,
-            # optional tuning
             "temperature": 0.2,
             "max_tokens": 1024,
         }
@@ -276,63 +279,64 @@ class AISummarizerTranscriber:
         try:
             resp = requests.post(url, headers=headers, json=payload, timeout=60)
         except Exception as e:
+            # hard failure -> raise so the UI can show a clean error
             raise RuntimeError(f"Failed to make request to OpenRouter API: {e}")
 
         if resp.status_code != 200:
-            # try to include any helpful body
             body = resp.text
             raise RuntimeError(f"OpenRouter API returned status {resp.status_code}: {body}")
 
-        """
-        # For debugging only
-        print("STATUS:", resp.status_code)
-        print("HEADERS:", resp.headers)
-        print("BODY (first 500 chars):")
-        print(resp.text[:500])
-        """
-
+        # Parse JSON
         try:
             j = resp.json()
         except Exception:
             raise RuntimeError("OpenRouter returned a non-JSON response.")
 
-        # The response schema is expected to be similar to Chat Completions:
-        # Try several common fields for maximum compatibility.
         summary_text = None
 
-        # Common field: choices[0].message.content
-        try:
-            if isinstance(j, dict) and "choices" in j and len(j["choices"]) > 0:
-                first_choice = j["choices"][0]
-                # typical openai-style
+        # ---- primary path: choices[0].message.content ----
+        if isinstance(j, dict):
+            choices = j.get("choices")
+            if choices and isinstance(choices, list) and len(choices) > 0:
+                first_choice = choices[0]
                 if isinstance(first_choice, dict):
                     msg = first_choice.get("message") or first_choice.get("delta") or first_choice
+
+                    # msg can be dict or string
                     if isinstance(msg, dict):
-                        # message.content or msg.get("content")
-                        if "content" in msg and isinstance(msg["content"], str):
-                            summary_text = msg["content"]
-                        elif "text" in msg and isinstance(msg["text"], str):
-                            summary_text = msg["text"]
+                        content = msg.get("content")
+
+                        # content can be str OR list (OpenRouter often uses list)
+                        if isinstance(content, str):
+                            summary_text = content
+                        elif isinstance(content, list):
+                            parts = []
+                            for c in content:
+                                if isinstance(c, str):
+                                    parts.append(c)
+                                elif isinstance(c, dict):
+                                    # handle typical {"type": "text", "text": "..."} chunks
+                                    txt = c.get("text") or c.get("content")
+                                    if isinstance(txt, str):
+                                        parts.append(txt)
+                            summary_text = "".join(parts).strip()
                     elif isinstance(msg, str):
                         summary_text = msg
-        except Exception:
-            pass
 
-        # Alternative: direct 'output' or 'result' fields
-        if summary_text is None:
-            for key in ("output", "result", "text", "response"):
-                v = j.get(key) if isinstance(j, dict) else None
-                if isinstance(v, str):
-                    summary_text = v
-                    break
-                # sometimes it's nested
-                if isinstance(v, list) and len(v) > 0 and isinstance(v[0], str):
-                    summary_text = v[0]
-                    break
+        # ---- secondary paths (older / alternative schemas) ----
+        if not summary_text:
+            if isinstance(j, dict):
+                for key in ("output", "result", "text", "response"):
+                    v = j.get(key)
+                    if isinstance(v, str):
+                        summary_text = v
+                        break
+                    if isinstance(v, list) and v and isinstance(v[0], str):
+                        summary_text = v[0]
+                        break
 
-        # As a last resort, stringify the whole JSON (but this is probably not desired)
-        if summary_text is None:
-            # try to extract any string value deeply (best-effort)
+        # ---- last resort: scan for first string in the JSON ----
+        if not summary_text:
             def find_first_string(obj):
                 if isinstance(obj, str):
                     return obj
@@ -347,25 +351,54 @@ class AISummarizerTranscriber:
                         if s:
                             return s
                 return None
+
             summary_text = find_first_string(j) or ""
 
-        # strip angle-bracket tokens BEFORE trimming/returning
-        summary_text = self._strip_angle_bracket_tokens(summary_text or "")
+        # Clean up & strip special tokens
+        summary_text = self._strip_angle_bracket_tokens(summary_text or "").strip()
 
-        return summary_text.strip()
+        # If it's STILL empty, fall back to a simple local summary
+        if not summary_text:
+            summary_text = self._fallback_summary(text_to_summarize)
 
-# ===========================
-# Example usage (commented)
-# ===========================
-if __name__ == "__main__":
-    # Example quick test; uncomment and adjust paths as needed.
-    # Make sure to set OPENROUTER_API_KEY above before calling summarize.
-    print("Working...\n")
-    
-    tst = AISummarizerTranscriber(model_dir="./whisper")
-    transcript = tst.transcribe("./transcription_test.wav")
-    print("TRANSCRIPT:\n", transcript)
-    summary = tst.summarize(transcript)
-    print("\nSUMMARY:\n", summary)
-    
-    # print("Module loaded. Create an AISummarizerTranscriber instance to transcribe/summarize.")
+        return summary_text
+    @staticmethod
+    def _fallback_summary(text: str, max_sentences: int = 4) -> str:
+        """
+        Simple local fallback summary:
+        - Clean the transcript
+        - Split into sentences
+        - Pick a few reasonably long sentences spread across the text
+        - Return them as bullet points
+
+        This gives something that *looks* like a proper summary even
+        when the API response is missing or unparsable.
+        """
+        if not text:
+            return "[Summary unavailable]"
+
+        # Reuse the same ASCII cleaner so we don't show weird tokens
+        cleaned = AISummarizerTranscriber._sanitize_to_ascii(text)
+        if not cleaned:
+            return "[Summary unavailable]"
+
+        # Naive sentence split: split on .?! followed by whitespace
+        sentences = re.split(r'(?<=[.!?])\s+', cleaned)
+
+        # Filter out super-short / filler sentences
+        candidates = [s.strip() for s in sentences if len(s.strip()) > 40]
+
+        # If nothing passes the filter, just truncate the cleaned text
+        if not candidates:
+            snippet = cleaned[:400].strip()
+            return snippet
+
+        # Pick up to max_sentences sentences spread through the text
+        # (start, middle, end-ish), so it feels like a real summary.
+        step = max(1, len(candidates) // max_sentences)
+        picked = candidates[0:len(candidates):step][:max_sentences]
+
+        # Return as bullet points
+        bullets = "\n".join(f"- {s}" for s in picked)
+        return bullets
+

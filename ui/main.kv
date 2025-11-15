@@ -182,6 +182,7 @@
                     multiline: False
                     size_hint_y: None
                     height: "56dp"
+                    _no_floating_label: True
 
                 MDTextField:
                     id: password_input
@@ -191,6 +192,7 @@
                     multiline: False
                     size_hint_y: None
                     height: "56dp"
+                    _no_floating_label: True
 
                 BoxLayout:
                     id: cBox
@@ -283,6 +285,7 @@
                     multiline: False
                     size_hint_y: None
                     height: "56dp"
+                    _no_floating_label: True
 
                 BoxLayout:
                     size_hint_y: None
@@ -374,7 +377,7 @@
                         on_press: app.stop()
 
         MDCard:
-            size_hint: 0.92, None
+            size_hint: 0.92, 0.26
             pos_hint: {"center_x": 0.5, "y": 0.32}
             height: "210dp"
             padding: "20dp"
@@ -448,81 +451,104 @@
             size: self.size
 
     FloatLayout:
+
         Image:
             source: "../assets/logo.png"
             size_hint: None, None
-            width: "320dp"
-            height: "140dp"
+            width: "400dp"
+            height: "120dp"
             allow_stretch: True
             keep_ratio: True
-            pos_hint: {"center_x": 0.5, "top": 0.92}
+            pos_hint: {"center_x": 0.5, "top": 0.96}
 
         MDCard:
             size_hint: 0.92, None
-            pos_hint: {"center_x": 0.5, "center_y": 0.2}
-            height: "80dp"
-            padding: "12dp"
-            radius: [18]
-            md_bg_color: 0.26, 0.3, 0.59, 1
-            BoxLayout:
-                orientation: "horizontal"
-                spacing: "8dp"
-                MDFlatButton:
-                    text: "Back"
-                    md_bg_color: "#303F9F"
-                    theme_text_color: "Custom"
-                    text_color: 1,1,1,1
-                    size_hint_x: 0.3
-                    on_press: root.manager.current = 'sScreen'
-                MDFlatButton:
-                    id: transcribe_button
-                    text: "Transcribe"
-                    md_bg_color: "#1E88E5"
-                    theme_text_color: "Custom"
-                    text_color: 1,1,1,1
-                    size_hint_x: 0.7
-                    on_press: root.start_transcription(audio_path_input.text)
-
-        MDCard:
-            size_hint: 0.92, None
-            pos_hint: {"center_x": 0.5, "center_y": 0.5}
-            height: "260dp"
+            pos_hint: {"center_x": 0.5, "y": 0.42}
+            height: self.minimum_height
             padding: "16dp"
             radius: [18]
             md_bg_color: 0.26, 0.3, 0.59, 1
             BoxLayout:
                 orientation: "vertical"
-                spacing: "8dp"
+                spacing: "10dp"
+                size_hint_y: None
+                height: self.minimum_height
+
                 MDLabel:
-                    text: "[b]Transcription Source[/b]"
+                    text: "[b]Transcribe Meeting[/b]"
                     markup: True
-                    font_size: "18dp"
-                    color: 1,1,1,1
-                    size_hint_y: None
-                    height: "26dp"
+                    font_size: "22dp"
+                    halign: "center"
+                    color: 1, 1, 1, 1
+
                 MDTextField:
                     id: audio_path_input
-                    hint_text: "Path to audio file (leave blank for test file)"
+                    hint_text: "Selected audio file"
+                    icon_right: "file"
+                    readonly: True
                     multiline: False
                     size_hint_y: None
-                    height: "48dp"
-                MDLabel:
-                    text: "[b]Summary Output[/b]"
+                    height: "50dp"
+                    _no_floating_label: True
+
+                BoxLayout:
+                    size_hint_y: None
+                    height: "44dp"
+                    spacing: "10dp"
+                    MDFlatButton:
+                        text: "[b]Choose file[/b]"
+                        markup: True
+                        font_size: "16dp"
+                        md_bg_color: "#1E88E5"
+                        theme_text_color: "Custom"
+                        text_color: 1,1,1,1
+                        on_press: root.open_file_manager()
+                    MDFlatButton:
+                        id: transcribe_btn
+                        text: "[b]Transcribe[/b]"
+                        markup: True
+                        font_size: "16dp"
+                        md_bg_color: "#43A047"
+                        theme_text_color: "Custom"
+                        text_color: 1,1,1,1
+                        on_press: root.start_transcription()
+
+                MDFlatButton:
+                    text: "[b]Back[/b]"
                     markup: True
-                    font_size: "18dp"
+                    font_size: "16dp"
+                    md_bg_color: "#303F9F"
+                    theme_text_color: "Custom"
+                    text_color: 1,1,1,1
+                    size_hint_y: None
+                    height: "40dp"
+                    on_press: root.manager.current = 'sScreen'
+
+        MDCard:
+            size_hint: 0.92, 0.36
+            pos_hint: {"center_x": 0.5, "y": 0.03}
+            padding: "12dp"
+            radius: [18]
+            md_bg_color: 0.26, 0.3, 0.59, 1
+            BoxLayout:
+                orientation: "vertical"
+                spacing: "6dp"
+
+                MDLabel:
+                    text: "[b]Summary (copy as needed)[/b]"
+                    markup: True
+                    font_size: "16dp"
                     color: 1,1,1,1
                     size_hint_y: None
-                    height: "26dp"
-                ScrollView:
-                    do_scroll_x: False
-                    MDLabel:
-                        id: summary_output
-                        text: ""
-                        markup: False
-                        text_size: self.width, None
-                        size_hint_y: None
-                        height: self.texture_size[1]
-                        color: 1,1,1,0.9
+                    height: "24dp"
+
+                MDTextField:
+                    id: summary_output
+                    hint_text: "Summary will appear here"
+                    readonly: True
+                    multiline: True
+                    size_hint_y: 1
+                    _no_floating_label: True
 
 
 <StorageScreen>:
@@ -535,57 +561,86 @@
             size: self.size
 
     FloatLayout:
+
         Image:
             source: "../assets/logo.png"
             size_hint: None, None
-            width: "320dp"
-            height: "140dp"
+            width: "400dp"
+            height: "120dp"
             allow_stretch: True
             keep_ratio: True
-            pos_hint: {"center_x": 0.5, "top": 0.92}
+            pos_hint: {"center_x": 0.5, "top": 0.96}
 
         MDCard:
-            size_hint: 0.92, None
-            pos_hint: {"center_x": 0.5, "center_y": 0.2}
-            height: "80dp"
-            padding: "12dp"
-            radius: [18]
-            md_bg_color: 0.26, 0.3, 0.59, 1
-            BoxLayout:
-                orientation: "horizontal"
-                spacing: "8dp"
-                MDFlatButton:
-                    text: "Back"
-                    md_bg_color: "#303F9F"
-                    theme_text_color: "Custom"
-                    text_color: 1,1,1,1
-                    size_hint_x: 0.3
-                    on_press: root.manager.current = 'sScreen'
-                MDLabel:
-                    text: "[b]Stored Meetings[/b]"
-                    markup: True
-                    color: 1,1,1,1
-                    halign: "center"
-
-        MDCard:
-            size_hint: 0.92, None
-            pos_hint: {"center_x": 0.5, "center_y": 0.5}
-            height: "260dp"
+            size_hint: 0.92, 0.5
+            pos_hint: {"center_x": 0.5, "y": 0.29}
             padding: "16dp"
             radius: [18]
             md_bg_color: 0.26, 0.3, 0.59, 1
             BoxLayout:
                 orientation: "vertical"
+                spacing: "8dp"
+
+                MDLabel:
+                    text: "[b]Saved Meetings[/b]"
+                    markup: True
+                    font_size: "22dp"
+                    halign: "center"
+                    color: 1,1,1,1
+                    size_hint_y: None
+                    height: "26dp"
+
+                MDLabel:
+                    text: "Select a meeting to view its transcript and summary."
+                    font_size: "14dp"
+                    halign: "center"
+                    color: 1,1,1,0.9
+                    size_hint_y: None
+                    height: "22dp"
+
                 ScrollView:
-                    do_scroll_x: False
-                    MDLabel:
-                        id: storage_label
-                        text: "No stored transcriptions yet."
-                        markup: True
-                        text_size: self.width, None
-                        size_hint_y: None
-                        height: self.texture_size[1]
-                        color: 1,1,1,0.9
+                    bar_color: 1,1,1,0.7
+                    bar_width: "4dp"
+                    MDList:
+                        id: storage_list
+
+        MDCard:
+            size_hint: 0.92, 0.26
+            pos_hint: {"center_x": 0.5, "y": 0.02}
+            padding: "12dp"
+            radius: [18]
+            md_bg_color: 0.26, 0.3, 0.59, 1
+            BoxLayout:
+                orientation: "vertical"
+                spacing: "6dp"
+
+                MDLabel:
+                    text: "[b]Details (copy text as needed)[/b]"
+                    markup: True
+                    font_size: "16dp"
+                    color: 1,1,1,1
+                    size_hint_y: None
+                    height: "24dp"
+
+                MDTextField:
+                    id: storage_detail
+                    hint_text: "Transcript and summary details will appear here"
+                    readonly: True
+                    multiline: True
+                    size_hint_y: 1
+                    _no_floating_label: True
+
+        MDFlatButton:
+            text: "[b]Back[/b]"
+            markup: True
+            font_size: "16dp"
+            md_bg_color: "#303F9F"
+            theme_text_color: "Custom"
+            text_color: 1,1,1,1
+            size_hint: 0.38, None
+            height: "40dp"
+            pos_hint: {"center_x": 0.5, "y": 0.30}
+            on_press: root.manager.current = 'sScreen'
 
 
 <SettingsScreen>:
@@ -598,37 +653,52 @@
             size: self.size
 
     FloatLayout:
+
         Image:
             source: "../assets/logo.png"
             size_hint: None, None
-            width: "320dp"
-            height: "140dp"
+            width: "400dp"
+            height: "120dp"
             allow_stretch: True
             keep_ratio: True
-            pos_hint: {"center_x": 0.5, "top": 0.92}
+            pos_hint: {"center_x": 0.5, "top": 0.96}
 
         MDCard:
-            size_hint: 0.92, None
-            pos_hint: {"center_x": 0.5, "center_y": 0.25}
-            height: "120dp"
+            size_hint: 0.92, 0.60
+            pos_hint: {"center_x": 0.5, "center_y": 0.50}
             padding: "16dp"
             radius: [18]
             md_bg_color: 0.26, 0.3, 0.59, 1
             BoxLayout:
                 orientation: "vertical"
-                spacing: "8dp"
+                spacing: "10dp"
+
                 MDLabel:
                     text: "[b]Settings[/b]"
                     markup: True
-                    font_size: "22dp"
-                    color: 1,1,1,1
+                    font_size: "26dp"
                     halign: "center"
-                MDFlatButton:
-                    text: "Back"
-                    md_bg_color: "#303F9F"
-                    theme_text_color: "Custom"
-                    text_color: 1,1,1,1
-                    on_press: root.manager.current = 'sScreen'
+                    color: 1,1,1,1
+                    size_hint_y: None
+                    height: "30dp"
+
+                MDLabel:
+                    text: "This prototype focuses on secure login and local-first meeting handling.\n\nFuture settings will include per-user encryption options, retention windows, and export controls."
+                    font_size: "14dp"
+                    halign: "center"
+                    color: 1,1,1,0.9
+
+        MDFlatButton:
+            text: "[b]Back[/b]"
+            markup: True
+            font_size: "16dp"
+            md_bg_color: "#303F9F"
+            theme_text_color: "Custom"
+            text_color: 1,1,1,1
+            size_hint: 0.38, None
+            height: "40dp"
+            pos_hint: {"center_x": 0.5, "y": 0.12}
+            on_press: root.manager.current = 'sScreen'
 
 
 <HelpScreen>:
@@ -641,40 +711,49 @@
             size: self.size
 
     FloatLayout:
+
         Image:
             source: "../assets/logo.png"
             size_hint: None, None
-            width: "320dp"
-            height: "140dp"
+            width: "400dp"
+            height: "120dp"
             allow_stretch: True
             keep_ratio: True
-            pos_hint: {"center_x": 0.5, "top": 0.92}
+            pos_hint: {"center_x": 0.5, "top": 0.96}
 
         MDCard:
-            size_hint: 0.92, None
-            pos_hint: {"center_x": 0.5, "center_y": 0.25}
-            height: "200dp"
+            size_hint: 0.92, 0.60
+            pos_hint: {"center_x": 0.5, "center_y": 0.50}
             padding: "16dp"
             radius: [18]
             md_bg_color: 0.26, 0.3, 0.59, 1
             BoxLayout:
                 orientation: "vertical"
-                spacing: "8dp"
+                spacing: "10dp"
+
                 MDLabel:
-                    text: "[b]Help[/b]"
+                    text: "[b]Help & About[/b]"
                     markup: True
-                    font_size: "22dp"
-                    color: 1,1,1,1
+                    font_size: "26dp"
                     halign: "center"
-                MDLabel:
-                    text: "VaultScribe prototype. Use Transcribe to generate summaries and Storage to review them."
-                    color: 1,1,1,0.9
-                    text_size: self.width, None
+                    color: 1,1,1,1
                     size_hint_y: None
-                    height: self.texture_size[1]
-                MDFlatButton:
-                    text: "Back"
-                    md_bg_color: "#303F9F"
-                    theme_text_color: "Custom"
-                    text_color: 1,1,1,1
-                    on_press: root.manager.current = 'sScreen'
+                    height: "30dp"
+
+                MDLabel:
+                    text: "LoginSystemDesktop is the secure front-end for VaultScribe.\n\n• Accounts are protected with Argon2id hashing and TOTP-based 2FA.\n• Meeting audio is transcribed locally, then summarized for review.\n• Stored summaries can be copied from the Storage screen for documentation."
+                    font_size: "14dp"
+                    halign: "center"
+                    color: 1,1,1,0.9
+
+        MDFlatButton:
+            text: "[b]Back[/b]"
+            markup: True
+            font_size: "16dp"
+            md_bg_color: "#303F9F"
+            theme_text_color: "Custom"
+            text_color: 1,1,1,1
+            size_hint: 0.38, None
+            height: "40dp"
+            pos_hint: {"center_x": 0.5, "y": 0.12}
+            on_press: root.manager.current = 'sScreen'
