@@ -30,7 +30,7 @@ from typing import Optional
 import requests
 
 # ========== Hardcoded OpenRouter API key ========================
-OPENROUTER_API_KEY = "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"
+OPENROUTER_API_KEY = ""
 # ================================================================
 
 class AISummarizerTranscriber:
