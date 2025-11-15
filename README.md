@@ -1,4 +1,4 @@
-# VaultScribe Desktop (LoginSystemDesktop)
+# VaultScribe Desktop
 
 VaultScribe Desktop is a **secure, local-first meeting assistant**.  
 It lets you:
